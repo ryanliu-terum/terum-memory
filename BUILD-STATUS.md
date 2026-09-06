@@ -9,7 +9,7 @@ update it in the same PR as the module it describes.
 | M1 | Data layer | schema (9 tables), open/migrate, meta, vec tables, fs-permission contract | **scaffolded** — this commit |
 | M2 | Job queue | lease/fencing claim (epoch+attempts token), retry ladder, dead-letter, reembed exclusivity, distill single-flight | **done** |
 | M3 | Distill engine | secret scrub, distill schema + prompt (pinned texts), parse/render, chunk-and-union, distill job handler + fenced persistence (note upsert, decision reconciliation, capture stamping) | **done** |
-| M4 | Chat backends | OpenAI-compatible + Ollama probe, agent-CLI spawn adapters, subprocess bounds | pending |
+| M4 | Chat backends | OpenAI-compatible + Ollama adapter (schema-format fallback, fail-closed keys), agent-CLI spawn adapters (argv/stdin, caps, SIGTERM→SIGKILL), probe ladder + 0600 config | **done** |
 | M5 | Embedder engine | ONNX runtime, model download + checksum, prefix-protocol choke point | pending |
 | M6 | Link + cluster | cosine linker, Louvain clustering, same-repo boost | pending |
 | M7 | Decision rail | dedup ladder, ratify gate, check engine (distilled-decision persistence landed in M3) | pending |
