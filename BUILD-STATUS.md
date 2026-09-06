@@ -8,11 +8,11 @@ update it in the same PR as the module it describes.
 |---|--------|--------|--------|
 | M1 | Data layer | schema (9 tables), open/migrate, meta, vec tables, fs-permission contract | **scaffolded** — this commit |
 | M2 | Job queue | lease/fencing claim (epoch+attempts token), retry ladder, dead-letter, reembed exclusivity, distill single-flight | **done** |
-| M3 | Distill engine | secret scrub, distill schema + prompt, parse, note render | pending |
+| M3 | Distill engine | secret scrub, distill schema + prompt (pinned texts), parse/render, chunk-and-union, distill job handler + fenced persistence (note upsert, decision reconciliation, capture stamping) | **done** |
 | M4 | Chat backends | OpenAI-compatible + Ollama probe, agent-CLI spawn adapters, subprocess bounds | pending |
 | M5 | Embedder engine | ONNX runtime, model download + checksum, prefix-protocol choke point | pending |
 | M6 | Link + cluster | cosine linker, Louvain clustering, same-repo boost | pending |
-| M7 | Decision rail | persist, dedup ladder, ratify gate, check engine | pending |
+| M7 | Decision rail | dedup ladder, ratify gate, check engine (distilled-decision persistence landed in M3) | pending |
 | M8 | Search engine | anchors + one-hop link walk | pending |
 | M9 | MCP server | stdio server, 4 tools, instructions | pending |
 | M10 | Capture | Stop-hook fast half, sidecar offsets, connect/uninstall config edits | pending |

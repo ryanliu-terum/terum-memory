@@ -49,6 +49,34 @@ export function enqueueJob(
   }).immediate();
 }
 
+/** Coalesce only queued jobs with exactly the same serialized payload. */
+export function enqueueCoalesced(
+  db: Db,
+  kind: string,
+  payload: unknown,
+  opts: EnqueueOptions = {},
+): string {
+  if (!JOB_KINDS.includes(kind as JobKind)) {
+    throw new Error(`Unknown job kind: ${kind}`);
+  }
+  const serialized = JSON.stringify(payload);
+  if (serialized === undefined) throw new Error("Job payload must be JSON serializable");
+  return db.transaction(() => {
+    const existing = db.prepare(`
+      SELECT id FROM jobs WHERE kind = ? AND status = 'queued' AND payload = ?
+      ORDER BY created_at, rowid LIMIT 1
+    `).get(kind, serialized) as { id: string } | undefined;
+    if (existing) return existing.id;
+    const id = randomUUID();
+    const now = timestamp(opts).toISOString();
+    db.prepare(`
+      INSERT INTO jobs (id, kind, payload, run_after, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, kind, serialized, opts.runAfter?.toISOString() ?? null, now, now);
+    return id;
+  }).immediate();
+}
+
 export function enqueueDistill(
   db: Db,
   site: string,
