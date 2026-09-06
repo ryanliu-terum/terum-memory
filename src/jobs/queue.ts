@@ -202,6 +202,33 @@ export function failJob(
   }).immediate();
 }
 
+/**
+ * Reschedule a claimed job to run again after a delay WITHOUT consuming its
+ * retry budget — a deliberate "not done yet, check back later," not a failure.
+ * Resets attempts to 0 and bumps epoch (same fencing discipline as retryFailed:
+ * the (epoch, attempts) token minted before this reschedule can never match one
+ * minted after), so a self-polling job (e.g. a backfill run waiting on its
+ * pages) can poll indefinitely without dead-lettering at attempt 5. Fenced:
+ * returns false if the lease was reclaimed, writing nothing.
+ */
+export function rescheduleJob(
+  db: Db,
+  claim: JobClaim,
+  delayMs: number,
+  opts: ClockOptions = {},
+): boolean {
+  return db.transaction(() => {
+    const now = timestamp(opts);
+    const runAfter = new Date(now.getTime() + Math.max(0, delayMs)).toISOString();
+    const result = db.prepare(`
+      UPDATE jobs SET status = 'queued', attempts = 0, epoch = epoch + 1,
+        run_after = ?, lease_until = NULL, updated_at = ?
+      WHERE id = ? AND attempts = ? AND epoch = ? AND status = 'running'
+    `).run(runAfter, now.toISOString(), claim.id, claim.attempts, claim.epoch);
+    return result.changes === 1;
+  }).immediate();
+}
+
 export function retryFailed(db: Db, opts: ClockOptions = {}): number {
   // epoch is bumped in the same UPDATE that resets attempts: the fencing token
   // is (epoch, attempts), so a claim minted before this requeue can never

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { openDb, type Db } from "../../db/open.js";
 import {
   backoffMs, claimNext, completeJob, enqueueDistill, enqueueJob,
-  failJob, queueCounts, renewLease, retryFailed,
+  failJob, queueCounts, renewLease, rescheduleJob, retryFailed,
 } from "../queue.js";
 import { JOB_KINDS, type JobClaim } from "../types.js";
 
@@ -145,6 +145,30 @@ describe("leases and fencing across independent database connections", () => {
     expect(claimNext(workerB, clock)).toBeNull();
     advance(1);
     expect(claim(workerB, clock)).toMatchObject({ id: a.id, attempts: 2 });
+  });
+
+  it("rescheduleJob is attempts-neutral, epoch-bumped, and fenced", () => {
+    const { db, connect, clock, advance } = fixture();
+    const workerB = connect();
+    enqueueJob(db, "backfill", {}, clock);
+    const a = claim(db, clock, 1_000);
+    expect(a.attempts).toBe(1);
+    // Reschedule: back to queued, attempts reset to 0, epoch bumped, run_after set.
+    expect(rescheduleJob(db, a, 30_000, clock)).toBe(true);
+    const after = row(db, a.id);
+    expect(after.status).toBe("queued");
+    expect(after.attempts).toBe(0);
+    expect(after.run_after).toBe(new Date(clock.now().getTime() + 30_000).toISOString());
+    // Not claimable until run_after passes.
+    advance(29_999);
+    expect(claimNext(workerB, clock)).toBeNull();
+    advance(1);
+    const b = claim(workerB, clock);
+    // attempts climbed only from the fresh claim, never accumulated across polls.
+    expect(b.attempts).toBe(1);
+    expect(b.epoch).toBe(a.epoch + 1);
+    // The original claim's token is now stale: its own reschedule writes nothing.
+    expect(rescheduleJob(db, a, 30_000, clock)).toBe(false);
   });
 
   it("rejects every stale worker write and rolls back its business writes", () => {

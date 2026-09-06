@@ -16,7 +16,7 @@ update it in the same PR as the module it describes.
 | M8 | Search engine | note+decision cosine anchors (fixed 0.40 recall floor), capped one-hop note link walk, deterministic rank/dedup, fail-closed | **done** |
 | M9 | MCP server | stdio server (SDK 1.30.0 registerTool), 4 tools (check/search/standing/ratify), single-user trigger-phrase instructions, stdout-transport discipline | **done** |
 | M10 | Capture | byte-offset transcript parser (complete-records-only, bad-line-count, interleaved sessions), crash-safe capture insert (sidecar after commit), ownership-exact config editor | **done** — worker spawn + hook CLI land in M12 |
-| M11 | Backfill | scan/import/distill jobs, caps, honesty guard | pending |
+| M11 | Backfill | newest-first scan+snapshot, parse-only import, import-before-distill barrier (rescheduleJob poll), caps + honesty guard | **done** — worker loop + CLI wiring in M12 |
 | M12 | CLI surface | full command set incl. reembed protocol, status, uninstall | pending |
 | M13 | Calibration | corpus fixtures, calibrate-thresholds script, measured constants + drift gate | pending (blocks the v0.1 tag) |
 
