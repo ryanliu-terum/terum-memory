@@ -27,6 +27,8 @@
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
     "better-sqlite3": "^12.11.1",
+    "graphology": "^0.26.0",
+    "graphology-communities-louvain": "^2.0.2",
     "sqlite-vec": "^0.1.9"
   },
   "devDependencies": {
