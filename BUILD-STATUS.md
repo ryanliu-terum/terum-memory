@@ -12,7 +12,7 @@ update it in the same PR as the module it describes.
 | M4 | Chat backends | OpenAI-compatible + Ollama adapter (schema-format fallback, fail-closed keys), agent-CLI spawn adapters (argv/stdin, caps, SIGTERM→SIGKILL), probe ladder + 0600 config | **done** |
 | M5 | Embedder engine | sha256-verified atomic model install (marker-last), prefix-protocol choke point (import-boundary-tested), masked mean pooling + L2, batching | **done** — real-model execution verified at M13 pinning |
 | M6 | Link + cluster | cosine top-K linker + repo-backbone edges, deterministic seeded Louvain, project naming + 0.5-overlap reconcile, fenced link-cluster job | **done** |
-| M7 | Decision rail | dedup ladder, ratify gate, check engine (distilled-decision persistence landed in M3) | pending |
+| M7 | Decision rail | dedup ladder (exact/cosine/judge, fail=no-merge), human-gated ratify (scrub, provenance upgrade, unique-hash race), check_decision + get_standing engines over decision_vec | **done** |
 | M8 | Search engine | anchors + one-hop link walk | pending |
 | M9 | MCP server | stdio server, 4 tools, instructions | pending |
 | M10 | Capture | Stop-hook fast half, sidecar offsets, connect/uninstall config edits | pending |

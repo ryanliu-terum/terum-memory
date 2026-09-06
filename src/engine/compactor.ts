@@ -1,4 +1,6 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
+import { decisionContentHash } from "../decisions/hash.js";
+export { decisionContentHash } from "../decisions/hash.js";
 import { getMeta, type Db } from "../db/open.js";
 import { completeJob, enqueueCoalesced, failJob } from "../jobs/queue.js";
 import type { JobClaim } from "../jobs/types.js";
@@ -77,10 +79,6 @@ function majorityRepo(captures: Capture[]): string | null {
     counts.set(repo, { count: (counts.get(repo)?.count ?? 0) + 1, latest });
   });
   return [...counts].sort((a, b) => b[1].count - a[1].count || b[1].latest - a[1].latest)[0]?.[0] ?? null;
-}
-
-export function decisionContentHash(text: string): string {
-  return createHash("sha256").update(text.trim().replace(/\s+/g, " ").toLowerCase()).digest("hex");
 }
 
 export interface DistillDeps {
