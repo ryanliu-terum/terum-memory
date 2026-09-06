@@ -119,6 +119,9 @@ CREATE TABLE jobs (            -- in-process queue + crash recovery
   status     TEXT NOT NULL DEFAULT 'queued'
              CHECK (status IN ('queued','running','done','failed')),
   attempts   INTEGER NOT NULL DEFAULT 0,
+  epoch      INTEGER NOT NULL DEFAULT 0,  -- bumped by retryFailed when attempts resets; the
+                                          -- fencing token is (epoch, attempts) so a stale
+                                          -- worker's token can never recur across a requeue
   last_error TEXT,
   run_after  TEXT,
   lease_until TEXT,            -- claimed-by-worker lease; expired lease = reclaimable

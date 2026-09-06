@@ -7,7 +7,7 @@ update it in the same PR as the module it describes.
 | # | Module | Covers | Status |
 |---|--------|--------|--------|
 | M1 | Data layer | schema (9 tables), open/migrate, meta, vec tables, fs-permission contract | **scaffolded** — this commit |
-| M2 | Job queue | lease/fencing claim, retry ladder, dead-letter, crash-window rules | pending |
+| M2 | Job queue | lease/fencing claim (epoch+attempts token), retry ladder, dead-letter, reembed exclusivity, distill single-flight | **done** |
 | M3 | Distill engine | secret scrub, distill schema + prompt, parse, note render | pending |
 | M4 | Chat backends | OpenAI-compatible + Ollama probe, agent-CLI spawn adapters, subprocess bounds | pending |
 | M5 | Embedder engine | ONNX runtime, model download + checksum, prefix-protocol choke point | pending |

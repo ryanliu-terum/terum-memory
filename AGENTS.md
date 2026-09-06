@@ -22,9 +22,11 @@ tests must never require a network, an API key, or a real model download.
    re-drive-able, never half-done.
 2. **Fenced queue writes.** Every worker-owned `jobs` update — retry/requeue,
    lease renewal, terminal moves — carries
-   `WHERE id = ? AND attempts = <token> AND status = 'running'`. Zero rows
-   affected means the lease was reclaimed: the stale worker rolls back and
-   abandons the job, writing nothing.
+   `WHERE id = ? AND attempts = <token> AND epoch = <token> AND status = 'running'`
+   (the fencing token is the `(epoch, attempts)` pair; `retryFailed` bumps
+   `epoch` whenever it resets `attempts`, keeping the pair monotonic). Zero
+   rows affected means the lease was reclaimed: the stale worker rolls back
+   and abandons the job, writing nothing.
 3. **Throw-on-placeholder.** `src/engine/thresholds.ts` and
    `src/engine/models.ts` deliberately throw on unmeasured constants and
    unpinned artifacts. Never "fix" one by inventing a number; constants are
