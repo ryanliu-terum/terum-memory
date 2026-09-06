@@ -14,7 +14,7 @@ update it in the same PR as the module it describes.
 | M6 | Link + cluster | cosine top-K linker + repo-backbone edges, deterministic seeded Louvain, project naming + 0.5-overlap reconcile, fenced link-cluster job | **done** |
 | M7 | Decision rail | dedup ladder (exact/cosine/judge, fail=no-merge), human-gated ratify (scrub, provenance upgrade, unique-hash race), check_decision + get_standing engines over decision_vec | **done** |
 | M8 | Search engine | note+decision cosine anchors (fixed 0.40 recall floor), capped one-hop note link walk, deterministic rank/dedup, fail-closed | **done** |
-| M9 | MCP server | stdio server, 4 tools, instructions | pending |
+| M9 | MCP server | stdio server (SDK 1.30.0 registerTool), 4 tools (check/search/standing/ratify), single-user trigger-phrase instructions, stdout-transport discipline | **done** |
 | M10 | Capture | Stop-hook fast half, sidecar offsets, connect/uninstall config edits | pending |
 | M11 | Backfill | scan/import/distill jobs, caps, honesty guard | pending |
 | M12 | CLI surface | full command set incl. reembed protocol, status, uninstall | pending |
