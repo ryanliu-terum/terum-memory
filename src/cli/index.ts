@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-const COMMANDS = ["init", "connect", "backfill", "sync", "decisions", "show", "check", "search", "decide", "status", "uninstall", "mcp", "hook"] as const;
+const COMMANDS = ["init", "connect", "backfill", "sync", "decisions", "show", "check", "search", "decide", "reembed", "status", "uninstall", "mcp", "hook"] as const;
 export const usage = (): string => `Usage: terum-memory <command> [options]\nCommands: ${COMMANDS.join(" · ")}\nconnect claude-code; hook stop`;
 export interface RouterDeps {
   out?: (text: string) => void;
@@ -19,6 +19,7 @@ const loaders: Record<string, () => Promise<{ run: (args: string[]) => Promise<n
   "check": () => import("./commands/check.js"),
   "search": () => import("./commands/search.js"),
   "decide": () => import("./commands/decide.js"),
+  "reembed": () => import("./commands/reembed.js"),
   "status": () => import("./commands/status.js"),
   "uninstall": () => import("./commands/uninstall.js"),
   "mcp": () => import("./commands/mcp.js"),

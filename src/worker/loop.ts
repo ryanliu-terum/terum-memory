@@ -45,8 +45,8 @@ function nextAvailable(db: Db, runtime: boolean, skipped: Map<string, string>, o
       for (;;) {
         const claim = claimNext(db, { now: opts.now });
         if (!claim) break;
-        const supported = ["distill", "link-cluster", "backfill", "backfill-page"].includes(claim.kind);
-        if (!supported || (!runtime && ["distill", "link-cluster"].includes(claim.kind))) {
+        const supported = ["distill", "link-cluster", "backfill", "backfill-page", "reembed"].includes(claim.kind);
+        if (!supported || (!runtime && ["distill", "link-cluster", "reembed"].includes(claim.kind))) {
           held.push(claim);
           skipped.set(claim.id, supported ? "runtime" : claim.kind);
         } else { selected = claim; break; }

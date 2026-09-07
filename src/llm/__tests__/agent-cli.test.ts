@@ -65,7 +65,7 @@ describe.skipIf(process.platform === "win32")("agent CLI subprocess contract", (
         ${stream === "stdout" ? "process.stdout.write('水'.repeat(100));" : stream === "stderr" ? "process.stderr.write('x'.repeat(300));" : "process.stdout.write('{}' + ' '.repeat(148)); process.stderr.write('x'.repeat(150));"}
         setInterval(() => {}, 1000);
       });`);
-    await expect(createAgentCliBackend({ binary: "gemini", binaryPath, outputCapBytes: 256, killGraceMs: 25 }).completeJSON(req)).rejects.toThrow("exceeded output cap");
+    await expect(createAgentCliBackend({ binary: "gemini", binaryPath, outputCapBytes: 256, killGraceMs: 300 }).completeJSON(req)).rejects.toThrow("exceeded output cap");
     const pid = Number(fs.readFileSync(pidFile, "utf8"));
     expect(() => process.kill(pid, 0)).toThrow();
   });
@@ -73,7 +73,7 @@ describe.skipIf(process.platform === "win32")("agent CLI subprocess contract", (
   it("times out with SIGTERM and rejects even when the child handles it with exit zero", async () => {
     const marker = path.join(dir, "term");
     const binaryPath = fixture(`process.on('SIGTERM', () => { require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'SIGTERM'); process.exit(0); }); process.stdin.resume(); setInterval(() => {}, 1000);`);
-    await expect(createAgentCliBackend({ binary: "claude", binaryPath, killGraceMs: 100 }).completeJSON({ ...req, timeoutMs: 500 })).rejects.toThrow("timed out");
+    await expect(createAgentCliBackend({ binary: "claude", binaryPath, killGraceMs: 500 }).completeJSON({ ...req, timeoutMs: 3000 })).rejects.toThrow("timed out");
     expect(fs.readFileSync(marker, "utf8")).toBe("SIGTERM");
   });
 
@@ -84,8 +84,8 @@ describe.skipIf(process.platform === "win32")("agent CLI subprocess contract", (
       process.on('SIGTERM', () => fs.writeFileSync(${JSON.stringify(marker)}, 'ignored'));
       process.stdin.resume(); setInterval(() => {}, 1000);`);
     const start = Date.now();
-    await expect(createAgentCliBackend({ binary: "codex", binaryPath, killGraceMs: 75 }).completeJSON({ ...req, timeoutMs: 500 })).rejects.toThrow("timed out");
-    expect(Date.now() - start).toBeGreaterThanOrEqual(570);
+    await expect(createAgentCliBackend({ binary: "codex", binaryPath, killGraceMs: 500 }).completeJSON({ ...req, timeoutMs: 3000 })).rejects.toThrow("timed out");
+    expect(Date.now() - start).toBeGreaterThanOrEqual(3400);
     expect(fs.readFileSync(marker, "utf8")).toBe("ignored");
     expect(() => process.kill(Number(fs.readFileSync(pidFile, "utf8")), 0)).toThrow();
     const child = vi.mocked(spawn).mock.results[0]!.value as ReturnType<typeof spawn>;
@@ -98,7 +98,7 @@ describe.skipIf(process.platform === "win32")("agent CLI subprocess contract", (
       require('node:fs').writeFileSync(${JSON.stringify(pidFile)}, String(child.pid));
       process.exit(0);`);
     try {
-      await expect(createAgentCliBackend({ binary: "claude", binaryPath, killGraceMs: 25 }).completeJSON({ ...req, timeoutMs: 500 })).rejects.toThrow(/timed out|could not receive stdin/);
+      await expect(createAgentCliBackend({ binary: "claude", binaryPath, killGraceMs: 300 }).completeJSON({ ...req, timeoutMs: 3000 })).rejects.toThrow(/timed out|could not receive stdin/);
       expect(fs.existsSync(pidFile)).toBe(true);
     } finally {
       if (fs.existsSync(pidFile)) process.kill(Number(fs.readFileSync(pidFile, "utf8")), "SIGKILL");

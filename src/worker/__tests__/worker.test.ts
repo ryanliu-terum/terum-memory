@@ -60,9 +60,11 @@ describe("dispatch", () => {
     await dispatchClaim(db, claim, undefined, { backfill: handler });
     expect(handler).toHaveBeenCalledWith(db, claim, {});
   });
-  it.each(["reembed", "surprise"])("throws UnsupportedJobKind for %s without failing it", async kind => {
+  it("throws UnsupportedJobKind for a genuinely unknown kind without failing it", async () => {
+    // reembed is now a handled kind (its own dispatch case); only an
+    // unrecognized kind hits the default throw.
     const { db } = fixture(); queued(db, ["reembed"]); const claim = claimNext(db)!;
-    await expect(dispatchClaim(db, { ...claim, kind: kind as typeof claim.kind }, runtime)).rejects.toBeInstanceOf(UnsupportedJobKind);
+    await expect(dispatchClaim(db, { ...claim, kind: "surprise" as typeof claim.kind }, runtime)).rejects.toBeInstanceOf(UnsupportedJobKind);
     expect(queueCounts(db).failed).toBe(0);
   });
 });
@@ -124,10 +126,15 @@ describe("draining", () => {
     for (const id of ids) expect(db.prepare("SELECT status, attempts FROM jobs WHERE id = ?").get(id)).toEqual({ status: "queued", attempts: 0 });
     expect(db.prepare("SELECT count(*) AS n FROM captures").get()).toEqual({ n: 1 });
   });
-  it("reembed stays queued and preserves its writer barrier", async () => {
+  it("without a runtime, reembed stays queued (runtime-gated) and its exclusivity barrier blocks other work", async () => {
+    // reembed needs the new embedder, so with no runtime it is left queued like
+    // distill/link-cluster — and M2's reembed exclusivity means the queued
+    // reembed also blocks the backfill job from being claimed. Nothing is
+    // processed, nothing fails, both jobs remain queued.
     const { db } = fixture(); queued(db, ["reembed", "backfill"]);
-    const result = await drainOnce(db, runtime, { dispatch: done });
-    expect(result).toMatchObject({ processed: 0, unsupported: ["reembed"] });
+    const result = await drainOnce(db, undefined, { dispatch: done });
+    expect(result).toMatchObject({ processed: 0 });
+    expect(result.unsupported).toEqual([]); // skipped for runtime, not as unsupported
     expect(queueCounts(db)).toEqual({ queued: 2, running: 0, done: 0, failed: 0 });
   });
 });

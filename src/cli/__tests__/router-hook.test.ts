@@ -19,7 +19,7 @@ it("version is preserved without loading commands", async () => {
   const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")) as { version: string };
   expect(out).toHaveBeenCalledWith(pkg.version); expect(load).not.toHaveBeenCalled();
 });
-it.each([["unknown"], ["reembed"], ["connect", "wrong"], ["hook"], ["hook", "other"], ["../db/open"]])("unknown routing exits one with usage", async (...args) => {
+it.each([["unknown"], ["nonsense"], ["connect", "wrong"], ["hook"], ["hook", "other"], ["../db/open"]])("unknown routing exits one with usage", async (...args) => {
   const err = vi.fn(); const load = vi.fn(); expect(await main(args, { err, load })).toBe(1);
   expect(err.mock.calls[0]?.[0]).toContain("Usage:"); expect(load).not.toHaveBeenCalled();
 });
