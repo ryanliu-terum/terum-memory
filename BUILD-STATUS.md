@@ -17,7 +17,8 @@ update it in the same PR as the module it describes.
 | M9 | MCP server | stdio server (SDK 1.30.0 registerTool), 4 tools (check/search/standing/ratify), single-user trigger-phrase instructions, stdout-transport discipline | **done** |
 | M10 | Capture | byte-offset transcript parser (complete-records-only, bad-line-count, interleaved sessions), crash-safe capture insert (sidecar after commit), ownership-exact config editor | **done** — worker spawn + hook CLI land in M12 |
 | M11 | Backfill | newest-first scan+snapshot, parse-only import, import-before-distill barrier (rescheduleJob poll), caps + honesty guard | **done** — worker loop + CLI wiring in M12 |
-| M12 | CLI surface | full command set incl. reembed protocol, status, uninstall | pending |
+| M12 | CLI surface | full command set (init/connect/backfill/sync/decisions/show/check/search/decide/status/uninstall/mcp/hook), worker loop + dispatch, detached spawn (pid+token lock), runtime-unavailable degradation | **done** (reembed → M12b) |
+| M12b | reembed | shadow-table swap, maintenance exclusivity, kill-point oracle | pending |
 | M13 | Calibration | corpus fixtures, calibrate-thresholds script, measured constants + drift gate | pending (blocks the v0.1 tag) |
 
 Deliberate placeholders that THROW until measured (do not "fix"): the local-embedder
