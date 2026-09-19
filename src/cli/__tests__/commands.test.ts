@@ -74,7 +74,7 @@ describe("connect, backfill and uninstall", () => {
     expect(f.output()).toContain("Backfill plan: 1 selected"); expect(queueCounts(f.db).queued).toBe(0); expect(f.spawn).not.toHaveBeenCalled();
     expect(await uninstall([], f.deps)).toBe(0); expect(fs.existsSync(f.db.name)).toBe(true);
     expect(fs.readFileSync(f.deps.settingsPath!, "utf8")).not.toContain("terum-memory hook stop");
-    expect(f.output()).toContain("Database remains:");
+    expect(f.output()).toContain("Data remains under"); expect(f.output()).toContain("terum-memory uninstall --purge");
   });
   it("default connect durably enqueues the snapshot and requests a detached worker", async () => {
     const f = setup(); transcripts(f.deps.projectsDir!, 2);
