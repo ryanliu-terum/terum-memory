@@ -19,10 +19,13 @@ update it in the same PR as the module it describes.
 | M11 | Backfill | newest-first scan+snapshot, parse-only import, import-before-distill barrier (rescheduleJob poll), caps + honesty guard | **done** — worker loop + CLI wiring in M12 |
 | M12 | CLI surface | full command set (init/connect/backfill/sync/decisions/show/check/search/decide/status/uninstall/mcp/hook), worker loop + dispatch, detached spawn (pid+token lock), runtime-unavailable degradation | **done** (reembed → M12b) |
 | M12b | reembed | resumable shadow-table build + fenced atomic swap (vectors+meta together), kill-point oracle, CLI + worker/dispatch wiring | **done** |
-| M13 | Calibration | corpus fixtures, calibrate-thresholds script, measured constants + drift gate | pending (blocks the v0.1 tag) |
+| M13 | Calibration | synthetic corpus fixture, `scripts/calibrate-thresholds.ts` (measure + reconcile), pinned artifacts, measured constants, secretless drift gate | **measured** (synthetic) — private real-corpus reconciliation is the remaining pre-tag gate |
 
-Deliberate placeholders that THROW until measured (do not "fix"): the local-embedder
-thresholds in `src/engine/thresholds.ts` and the artifact pins (revision/sha256) in
-`src/engine/models.ts` — both are filled by the M13 calibration run before the v0.1 tag.
+`src/engine/thresholds.ts` and `src/engine/models.ts` still THROW on any unmeasured
+placeholder; adding a supported embedder means measuring it in the same PR
+(`node scripts/calibrate-thresholds.ts measure` after `npm run build`, with the reference
+API key). Before the v0.1 tag, run `reconcile --corpus <private real corpus> --apply`
+and copy any adopted readings into `thresholds.ts`; the drift test keeps the three in step.
 
-Launch gates (beyond M13): README benchmark table, secret-scan pass, npm publish, repo flip.
+Launch gates (beyond M13): real-corpus reconciliation, secret-scan pass, npm trusted
+publisher + protected `npm` environment (one-time), v0.1 tag → publish, repo flip.

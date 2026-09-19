@@ -28,8 +28,9 @@ const pinned: EmbedderManifest = { id: "new", dim: 3, hfRepo: "fake", revision: 
 
 it("rejects an unpinned target before enqueue or worker startup", async () => {
   const f = fixture();
-  expect(await run(["--model", "nomic-embed-text-v1"], f)).toBe(1);
-  expect(f.err).toHaveBeenCalledExactlyOnceWith("cannot reembed: nomic-embed-text-v1 is not pinned/calibrated yet");
+  const manifestFor = () => { throw new Error('embedder "unpinned-fixture" artifact pin is an unmeasured placeholder'); };
+  expect(await run(["--model", "unpinned-fixture"], { ...f, manifestFor })).toBe(1);
+  expect(f.err).toHaveBeenCalledExactlyOnceWith("cannot reembed: unpinned-fixture is not pinned/calibrated yet");
   expect(f.db.prepare("SELECT * FROM jobs").all()).toEqual([]); expect(f.drain).not.toHaveBeenCalled();
 });
 it.each(["unknown-model", "../../model", "__proto__"])("rejects unknown id %s cleanly", async id => {

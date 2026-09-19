@@ -147,7 +147,8 @@ describe("runtime", () => {
     const { db } = fixture(); db.transaction(() => setMeta(db, "embedder_id", "nomic-embed-text-v1"))();
     await expect(buildRuntime(db, { loadConfig: () => ({}) })).rejects.toThrow("capture-only");
     const other = fixture(); other.db.transaction(() => setMeta(other.db, "embedder_id", "nomic-embed-text-v1"))();
-    await expect(buildRuntime(other.db, { loadConfig: () => ({ chat: { backend: "claude" } }) })).rejects.toThrow("unmeasured placeholder");
+    const manifestFor = () => { throw new Error('embedder "fixture" artifact pin is an unmeasured placeholder'); };
+    await expect(buildRuntime(other.db, { loadConfig: () => ({ chat: { backend: "claude" } }), manifestFor })).rejects.toThrow("unmeasured placeholder");
   });
   it("builds only once and passes the locked manifest", async () => {
     const { db } = fixture(); db.transaction(() => setMeta(db, "embedder_id", "fake"))();
