@@ -1,0 +1,61 @@
+# Release: publish terum-memory to npm when a v* tag is pushed.
+#
+# Authentication is npm trusted publishing (OIDC). There is deliberately NO
+# NODE_AUTH_TOKEN secret anywhere in this repo: the job exchanges a short-lived
+# GitHub OIDC token for publish rights and attaches provenance to the package.
+#
+# One-time setup a maintainer must do before the first tagged release:
+#
+#   1. npm: on the `terum-memory` package page, open Settings -> Publishing
+#      access -> Trusted publisher, choose GitHub Actions, and register
+#        repository:        ryanliu-terum/terum-memory
+#        workflow filename: release.yml
+#        environment:       npm
+#      The filename and environment must match this file exactly.
+#
+#   2. GitHub: in this repository, Settings -> Environments -> New environment,
+#      name it `npm`, and add at least one required reviewer. Every release then
+#      pauses for approval before the publish job runs.
+#
+# Releasing is then: bump `version` in package.json, commit, tag `v<version>`,
+# push the tag, and approve the `npm` environment run.
+name: release
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - name: Verify tag matches package.json version
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "${GITHUB_REF_NAME}" != "v${PKG_VERSION}" ]; then
+            echo "::error::Tag '${GITHUB_REF_NAME}' does not match package.json version '${PKG_VERSION}' (expected tag 'v${PKG_VERSION}'). Bump package.json or retag, then push again."
+            exit 1
+          fi
+          echo "Tag ${GITHUB_REF_NAME} matches package.json version ${PKG_VERSION}."
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      # Trusted publishing needs npm 11.5.1 or newer; Node 20 ships npm 10.
+      # This upgrades only the npm CLI in the runner, after the lockfile has
+      # already been installed and verified above.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
+      - run: npm publish --provenance --access public

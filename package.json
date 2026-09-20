@@ -8,6 +8,27 @@
     "type": "git",
     "url": "git+https://github.com/ryanliu-terum/terum-memory.git"
   },
+  "homepage": "https://github.com/ryanliu-terum/terum-memory#readme",
+  "bugs": {
+    "url": "https://github.com/ryanliu-terum/terum-memory/issues"
+  },
+  "author": "Terum",
+  "keywords": [
+    "memory",
+    "decision-record",
+    "coding-agents",
+    "claude-code",
+    "mcp",
+    "local-first",
+    "sqlite",
+    "embeddings",
+    "knowledge-base",
+    "cli"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "engines": {
     "node": ">=20"
   },

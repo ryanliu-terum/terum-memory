@@ -1,0 +1,92 @@
+name: Bug report
+description: Something in terum-memory does not behave as documented.
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please redact anything private before pasting: transcript excerpts, decision text, file paths that reveal project names, API keys, and hostnames.
+
+        If this is a security issue, do not file it here. Follow SECURITY.md instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Include exact commands and error output where you can.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. terum-memory init
+        2. terum-memory connect claude-code
+        3. ...
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: e.g. macOS 15.3, Ubuntu 24.04, Windows 11
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node version
+      description: Output of `node --version`.
+      placeholder: v20.19.0
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: terum-memory version
+      description: Output of `terum-memory --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: embedder
+    attributes:
+      label: Embedder
+      description: The embedding model this database was initialized with.
+      options:
+        - nomic-embed-text-v1 (default)
+        - all-MiniLM-L6-v2 (--low-resource)
+        - OpenAI-compatible API embedder
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Chat backend
+      description: The backend `init` found (or that you configured) for distillation.
+      options:
+        - OpenAI-compatible endpoint (API key)
+        - OpenAI-compatible endpoint (base URL, e.g. Ollama or another local server)
+        - claude CLI
+        - codex CLI
+        - gemini CLI
+        - None (capture-only mode)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: terum-memory status output
+      description: Paste the output of `terum-memory status`. Redact anything private first (project names, paths, decision text).
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Logs, screenshots, or context that might help. Redact anything private.
+    validations:
+      required: false
