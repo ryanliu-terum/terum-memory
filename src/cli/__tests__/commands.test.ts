@@ -38,10 +38,24 @@ function transcripts(dir: string, count: number) {
 describe("init", () => {
   it("creates/migrates the database and clearly reports unpinned artifacts", async () => {
     const f = setup(); const file = path.join(f.home, "fresh.db");
-    expect(await init([], { ...f.deps, db: undefined, dbPath: file })).toBe(1);
+    // Inject an unpinned manifest: the shipped pins are measured, so the placeholder
+    // path is exercised through the seam rather than by downloading a model.
+    const manifestFor = () => { throw new Error('embedder "x" artifact pin is an unmeasured placeholder'); };
+    expect(await init([], { ...f.deps, db: undefined, dbPath: file, manifestFor })).toBe(1);
     expect(fs.existsSync(file)).toBe(true);
     expect(f.output()).toMatch(/No calibrated embedder pinned yet/);
     expect(f.spawn).not.toHaveBeenCalled();
+  });
+  it("--low-resource selects the fallback embedder and is exclusive with --model", async () => {
+    const f = setup(); const file = path.join(f.home, "low.db");
+    const manifestFor = vi.fn((id: string) => ({ id, dim: 3, hfRepo: "fake", revision: "pin", sha256: "x", onnxFile: "model.onnx",
+      pooling: "mean" as const, l2Normalize: true, maxTokens: 10, truncation: "tail" as const, prefixes: null }));
+    const opts = { ...f.deps, db: undefined, dbPath: file, manifestFor, ensureModelInstalled: vi.fn(async () => f.home),
+      probeChatBackends: vi.fn(async () => ({ config: null, transcript: [] })), saveConfig: vi.fn() };
+    expect(await init(["--low-resource"], opts)).toBe(0);
+    expect(manifestFor).toHaveBeenCalledWith("all-MiniLM-L6-v2");
+    expect(await init(["--low-resource", "--model", "other"], { ...opts, dbPath: path.join(f.home, "other.db") })).toBe(1);
+    expect(f.err.mock.calls.map(call => call[0]).join("\n")).toMatch(/mutually exclusive/);
   });
   it("a locked database never relocks, reinstalls, or probes", async () => {
     const f = setup(); f.db.transaction(() => setMeta(f.db, "embedder_locked_at", "original"))();

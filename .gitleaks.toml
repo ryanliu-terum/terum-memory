@@ -1,0 +1,13 @@
+# Secret-scan configuration for the pre-push / pre-flip gate (`gitleaks dir .`, `gitleaks git .`).
+# The default ruleset applies; the only allowlisted location is the scrubber's own test
+# fixtures, which contain deliberately fake tokens so the scrubber can be proven to remove them.
+title = "terum-memory"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Synthetic secrets used as inputs to the secret-scrub tests"
+paths = [
+  '''src/engine/__tests__/secret-scrub\.test\.ts''',
+]

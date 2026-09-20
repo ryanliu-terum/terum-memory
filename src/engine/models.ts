@@ -32,9 +32,10 @@ const MANIFESTS: Record<string, EmbedderManifest> = {
     id: "nomic-embed-text-v1",
     dim: 768,
     hfRepo: "nomic-ai/nomic-embed-text-v1",
-    revision: null, // TBD: pin exact commit sha alongside the measured sha256
+    // Pinned 2026-09-19 to the upstream repository's then-current revision.
+    revision: "3ac47f125a41961d13b397d0332866be2f9152e1",
     onnxFile: "onnx/model_quantized.onnx",
-    sha256: null, // TBD: measured when the artifact is pinned
+    sha256: "b7941066a6529a287e2502ea6cb68ff82006d311eac53627dc88c259cbcbda64",
     pooling: "mean",
     l2Normalize: true,
     maxTokens: 8192,
@@ -45,9 +46,12 @@ const MANIFESTS: Record<string, EmbedderManifest> = {
     id: "all-MiniLM-L6-v2",
     dim: 384,
     hfRepo: "sentence-transformers/all-MiniLM-L6-v2",
-    revision: null, // TBD: pin exact commit sha alongside the measured sha256
-    onnxFile: "onnx/model_quantized.onnx",
-    sha256: null, // TBD: measured when the artifact is pinned
+    // Pinned 2026-09-19. Upstream ships no `model_quantized.onnx`; the
+    // dynamically quantized uint8 graph is the ~25 MB low-resource artifact and
+    // runs on any CPU (its filename records the quantization target only).
+    revision: "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    onnxFile: "onnx/model_quint8_avx2.onnx",
+    sha256: "b941bf19f1f1283680f449fa6a7336bb5600bdcd5f84d10ddc5cd72218a0fd21",
     pooling: "mean",
     l2Normalize: true,
     maxTokens: 512,

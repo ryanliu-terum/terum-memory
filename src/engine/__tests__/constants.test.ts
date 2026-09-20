@@ -9,9 +9,14 @@ describe("thresholds throw-on-placeholder contract", () => {
     expect(t.rail).toEqual({ merge: 0.7, judgeLow: 0.6, floor: 0.55 });
   });
 
-  it("unmeasured local embedders throw, they never return a guess", () => {
-    expect(() => thresholdsFor("nomic-embed-text-v1")).toThrow(/TBD-by-script/);
-    expect(() => thresholdsFor("all-MiniLM-L6-v2")).toThrow(/TBD-by-script/);
+  it("supported local embedders carry measured constants, never reference-space values verbatim", () => {
+    for (const id of ["nomic-embed-text-v1", "all-MiniLM-L6-v2"]) {
+      const t = thresholdsFor(id);
+      expect(t.measuredAt).not.toBe("benchmarked-reference");
+      expect(t.corpusSha256).toMatch(/^[0-9a-f]{64}$/);
+      // A local model's scale differs from the reference; identical anchors would mean a copy, not a measurement.
+      expect(t.rail).not.toEqual({ merge: 0.7, judgeLow: 0.6, floor: 0.55 });
+    }
   });
 
   it("unknown embedder ids throw a distinct error", () => {
@@ -24,9 +29,13 @@ describe("model artifact pin contract", () => {
     expect(knownEmbedders().sort()).toEqual(["all-MiniLM-L6-v2", "nomic-embed-text-v1"]);
   });
 
-  it("unpinned artifacts throw, they never download unverified", () => {
-    expect(() => manifestFor("nomic-embed-text-v1")).toThrow(/unmeasured placeholder/);
-    expect(() => manifestFor("all-MiniLM-L6-v2")).toThrow(/unmeasured placeholder/);
+  it("supported artifacts are pinned by exact revision and sha256", () => {
+    for (const id of ["nomic-embed-text-v1", "all-MiniLM-L6-v2"]) {
+      const m = manifestFor(id);
+      expect(m.revision).toMatch(/^[0-9a-f]{40}$/);
+      expect(m.sha256).toMatch(/^[0-9a-f]{64}$/);
+      expect(m.onnxFile).toMatch(/\.onnx$/);
+    }
   });
 
   it("unknown embedder ids throw a distinct error", () => {

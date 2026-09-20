@@ -25,7 +25,11 @@ function fake(): Embedder {
 }
 beforeEach(() => {
   const original = models.manifestFor;
-  vi.spyOn(models, "manifestFor").mockImplementation(id => id === "new" ? manifest : original(id));
+  vi.spyOn(models, "manifestFor").mockImplementation(id => {
+    if (id === "new") return manifest;
+    if (id === "unpinned-fixture") throw new Error('embedder "unpinned-fixture" artifact pin is an unmeasured placeholder');
+    return original(id);
+  });
 });
 afterEach(() => {
   vi.restoreAllMocks(); vi.unstubAllEnvs();
@@ -226,7 +230,7 @@ describe("reembed protocol", () => {
 
   it("propagates an unpinned manifest as a job failure without loading a model", async () => {
     const { db, claim } = fixture(); const embedderFor = vi.fn(async () => fake());
-    expect(await runReembedJob(db, { ...claim, payload: { targetEmbedderId: "nomic-embed-text-v1" } }, { embedderFor, now }))
+    expect(await runReembedJob(db, { ...claim, payload: { targetEmbedderId: "unpinned-fixture" } }, { embedderFor, now }))
       .toMatchObject({ status: "requeued", error: expect.stringContaining("placeholder") });
     expect(embedderFor).not.toHaveBeenCalled(); assertSpace(db, "old");
   });
@@ -248,7 +252,7 @@ describe("reembed dispatch", () => {
   it("leaves unavailable targets queued with a reason without spending retries", async () => {
     const { db, claim } = fixture();
     const runtime: Runtime = { backend: { modelId: "fake", completeJSON: async () => "{}" }, embedder: fake(), now };
-    const result = await dispatchClaim(db, { ...claim, payload: { targetEmbedderId: "nomic-embed-text-v1" } }, runtime);
+    const result = await dispatchClaim(db, { ...claim, payload: { targetEmbedderId: "unpinned-fixture" } }, runtime);
     expect(result).toMatchObject({ status: "requeued", error: expect.stringContaining("placeholder") });
     expect(db.prepare("SELECT status, attempts, epoch, last_error FROM jobs").get()).toMatchObject({ status: "queued", attempts: 0, epoch: 1, last_error: expect.stringContaining("placeholder") });
     assertSpace(db, "old");

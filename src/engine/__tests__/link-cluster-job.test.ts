@@ -120,7 +120,7 @@ it("persists sub-threshold backbone edges while real similarity wins for shared 
   expect(businessState(f.db).projects).toHaveLength(2);
 });
 
-it.each(["missing", "nomic-embed-text-v1", "unknown"])("requeues invalid embedder configuration %s without business writes", async embedder => {
+it.each(["missing", "unknown"])("requeues invalid embedder configuration %s without business writes", async embedder => {
   const f = fixture(); f.seed();
   addProject(f.db, "existing", "Preserve", ["a", "b"]);
   f.db.transaction(() => {

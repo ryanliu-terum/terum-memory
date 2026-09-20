@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "measuredAt": "2026-09-19T04:39:54.402Z",
+  "reference": {
+    "id": "text-embedding-3-small",
+    "anchors": {
+      "link": 0.7,
+      "merge": 0.7,
+      "judgeLow": 0.6,
+      "floor": 0.55
+    },
+    "distribution": {
+      "mean": 0.5219,
+      "sd": 0.1001
+    }
+  },
+  "corpus": {
+    "path": "fixtures/calibration-corpus/synthetic.jsonl",
+    "sha256": "43a491d0cd97b18272dad17d9df6407eb502f7e12ad671ee8af12081745efe79",
+    "notes": 200,
+    "pairs": 19900,
+    "provenance": "synthetic"
+  },
+  "densities": {
+    "link": 0.043567839195979896,
+    "merge": 0.043567839195979896,
+    "judgeLow": 0.20909547738693468,
+    "floor": 0.3756281407035176
+  },
+  "embedders": {
+    "nomic-embed-text-v1": {
+      "revision": "3ac47f125a41961d13b397d0332866be2f9152e1",
+      "onnxFile": "onnx/model_quantized.onnx",
+      "sha256": "b7941066a6529a287e2502ea6cb68ff82006d311eac53627dc88c259cbcbda64",
+      "dim": 768,
+      "spearman": 0.8066,
+      "distribution": {
+        "mean": 0.7339,
+        "sd": 0.0499
+      },
+      "thresholds": {
+        "link": 0.8183,
+        "rail": {
+          "merge": 0.8183,
+          "judgeLow": 0.7728,
+          "floor": 0.7491
+        }
+      }
+    },
+    "all-MiniLM-L6-v2": {
+      "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+      "onnxFile": "onnx/model_quint8_avx2.onnx",
+      "sha256": "b941bf19f1f1283680f449fa6a7336bb5600bdcd5f84d10ddc5cd72218a0fd21",
+      "dim": 384,
+      "spearman": 0.7995,
+      "distribution": {
+        "mean": 0.4956,
+        "sd": 0.1384
+      },
+      "thresholds": {
+        "link": 0.7176,
+        "rail": {
+          "merge": 0.7176,
+          "judgeLow": 0.6127,
+          "floor": 0.546
+        }
+      }
+    }
+  },
+  "reconciliation": null
+}

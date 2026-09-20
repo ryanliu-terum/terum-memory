@@ -1,4 +1,13 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
+// The shipped local embedders are measured; an unmeasured id is simulated through the
+// module seam so the "no fallback constants" contract stays under test.
+vi.mock("../../engine/thresholds.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../engine/thresholds.js")>();
+  return { ...actual, thresholdsFor: (id: string) => {
+    if (id === "unmeasured-fixture") throw new Error('no measured thresholds for embedder "unmeasured-fixture" (fixture)');
+    return actual.thresholdsFor(id);
+  } };
+});
 import { setMeta } from "../../db/open.js";
 import { runCheckDecision, runGetStandingDecisions } from "../check.js";
 import { axis, fixture, NOW, rows, seed, vector } from "./helpers.js";
@@ -123,7 +132,7 @@ it("topic embedding fails closed", async () => {
 it("check and topic standing propagate unmeasured database rail errors without fallback", async () => {
   const f = fixture();
   seed(f.db);
-  f.db.transaction(() => setMeta(f.db, "embedder_id", "nomic-embed-text-v1"))();
+  f.db.transaction(() => setMeta(f.db, "embedder_id", "unmeasured-fixture"))();
   await expect(runCheckDecision(f.db, "statement", f.deps)).rejects.toThrow("no measured thresholds");
   await expect(runGetStandingDecisions(f.db, { topic: "storage" }, f.deps)).rejects.toThrow("no measured thresholds");
   expect(rows(f.db, "receipts")).toHaveLength(0);

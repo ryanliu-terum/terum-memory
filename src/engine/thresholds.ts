@@ -40,10 +40,23 @@ const MEASURED: Record<string, EmbedderThresholds | null> = {
     measuredAt: "benchmarked-reference",
     corpusSha256: null,
   },
-  // T_NOMIC — TBD-by-script: measured by scripts/calibrate-thresholds.ts before the v0.1 tag.
-  "nomic-embed-text-v1": null,
-  // T_MINILM — TBD-by-script: measured by scripts/calibrate-thresholds.ts before the v0.1 tag.
-  "all-MiniLM-L6-v2": null,
+  // Measured 2026-09-19 by scripts/calibrate-thresholds.ts against the checked-in
+  // synthetic corpus (fixtures/calibration-results.json holds the full run; the
+  // drift test enforces that these values, the corpus, and the artifact pins agree).
+  // Reconciliation against a private real corpus (offset > 0.02 resolves in favor
+  // of the real reading) is a pre-tag gate; rerun `reconcile --apply` and update here.
+  "nomic-embed-text-v1": {
+    link: 0.8183,
+    rail: { merge: 0.8183, judgeLow: 0.7728, floor: 0.7491 },
+    measuredAt: "2026-09-19T04:39:54.402Z",
+    corpusSha256: "43a491d0cd97b18272dad17d9df6407eb502f7e12ad671ee8af12081745efe79",
+  },
+  "all-MiniLM-L6-v2": {
+    link: 0.7176,
+    rail: { merge: 0.7176, judgeLow: 0.6127, floor: 0.546 },
+    measuredAt: "2026-09-19T04:39:54.402Z",
+    corpusSha256: "43a491d0cd97b18272dad17d9df6407eb502f7e12ad671ee8af12081745efe79",
+  },
 };
 
 export function thresholdsFor(embedderId: string): EmbedderThresholds {

@@ -2,6 +2,15 @@ import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { expect, it, vi } from "vitest";
+// The shipped local embedders are measured; an unmeasured id is simulated through the
+// module seam so the "no fallback constants" contract stays under test.
+vi.mock("../../engine/thresholds.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../engine/thresholds.js")>();
+  return { ...actual, thresholdsFor: (id: string) => {
+    if (id === "unmeasured-fixture") throw new Error('no measured thresholds for embedder "unmeasured-fixture" (fixture)');
+    return actual.thresholdsFor(id);
+  } };
+});
 import { z } from "zod";
 import { setMeta, type Db } from "../../db/open.js";
 import { axis, fixture, NOW, rows, seed } from "../../decisions/__tests__/helpers.js";
@@ -100,7 +109,7 @@ it("surfaces check embedding failure without recording a successful check", asyn
 
 it("surfaces unmeasured thresholds without substituting constants", async () => {
   const f = setup();
-  f.db.transaction(() => setMeta(f.db, "embedder_id", "nomic-embed-text-v1"))();
+  f.db.transaction(() => setMeta(f.db, "embedder_id", "unmeasured-fixture"))();
   const result = await handlers.check_decision({ statement: "Use SQLite" }, f.deps);
   expect(result.isError).toBe(true);
   expect(text(result)).toContain("no measured thresholds");
