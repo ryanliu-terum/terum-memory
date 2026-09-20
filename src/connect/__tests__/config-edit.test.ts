@@ -84,19 +84,86 @@ describe("Claude Code config ownership", () => {
     expect(read(opts.mcpConfigPath)).toBe(mcp);
   });
 
-  it.each([
-    { ...hook, matcher: "" },
-    { hooks: [{ type: "command", command: " terum-memory hook stop " }] },
-    { hooks: [...hook.hooks, { type: "command", command: "mine" }] },
-    { command: "terum-memory hook stop" },
-  ])("refuses noncanonical exact hook commands and preserves them on uninstall: %j", value => {
+  const userHook = { type: "command", command: "mine" };
+  const noncanonical: Array<{ value: unknown; after: unknown[] }> = [
+    { value: { ...hook, matcher: "" }, after: [] },
+    { value: { matcher: "", timeout: 5, hooks: hook.hooks }, after: [] },
+    { value: { hooks: [{ type: "command", command: " terum-memory hook stop " }] }, after: [] },
+    { value: { hooks: [{ command: "terum-memory hook stop" }] }, after: [] },
+    { value: { hooks: [...hook.hooks, userHook] }, after: [{ hooks: [userHook] }] },
+    { value: { matcher: "x", hooks: [userHook, ...hook.hooks, userHook] }, after: [{ matcher: "x", hooks: [userHook, userHook] }] },
+    { value: { hooks: [...hook.hooks, ...hook.hooks, userHook] }, after: [{ hooks: [userHook] }] },
+    { value: { command: "terum-memory hook stop" }, after: [] },
+    { value: { command: " terum-memory hook stop ", matcher: "" }, after: [] },
+  ];
+
+  it.each(noncanonical)("connect refuses noncanonical exact hook commands without touching either file: $value", ({ value }) => {
     const settings = JSON.stringify({ hooks: { Stop: [value] } });
     fs.writeFileSync(opts.settingsPath, settings);
     expect(() => installClaudeCodeConfig(opts)).toThrow(/Collision/);
     expect(read(opts.settingsPath)).toBe(settings);
     expect(fs.existsSync(opts.mcpConfigPath)).toBe(false);
+  });
+
+  it.each(noncanonical)("uninstall removes hook objects keyed on the command, keeping user hooks: $value", ({ value, after }) => {
+    fs.writeFileSync(opts.settingsPath, JSON.stringify({ hooks: { Stop: [value] } }));
+    uninstallClaudeCodeConfig(opts);
+    expect(JSON.parse(read(opts.settingsPath)).hooks.Stop).toEqual(after);
+    expect(fs.existsSync(opts.mcpConfigPath)).toBe(false);
+  });
+
+  it.each([
+    "terum-memory hook stop --custom",
+    "echo terum-memory hook stop",
+    "terum-memory hook stop;",
+    "terum-memory  hook stop",
+    "TERUM-MEMORY HOOK STOP",
+    "terum-memory hook",
+    "npx terum-memory hook stop",
+  ])("uninstall never touches lookalike command %j", command => {
+    const entries = [{ hooks: [{ type: "command", command }] }, { command }, { matcher: "", hooks: [{ command }, userHook] }];
+    const settings = JSON.stringify({ hooks: { Stop: entries } });
+    fs.writeFileSync(opts.settingsPath, settings);
     uninstallClaudeCodeConfig(opts);
     expect(read(opts.settingsPath)).toBe(settings);
+  });
+
+  it("uninstall ignores non-object entries and non-string or non-array shapes around our command", () => {
+    const entries = [null, 1, "terum-memory hook stop", ["terum-memory hook stop"],
+      { hooks: "terum-memory hook stop" }, { hooks: { command: "terum-memory hook stop" } },
+      { command: ["terum-memory hook stop"] }, { hooks: [null, "terum-memory hook stop", { command: 1 }] }];
+    const settings = JSON.stringify({ hooks: { Stop: entries } });
+    fs.writeFileSync(opts.settingsPath, settings);
+    uninstallClaudeCodeConfig(opts);
+    expect(read(opts.settingsPath)).toBe(settings);
+  });
+
+  it("uninstall removes a hand-edited entry span-wise, leaving surrounding tokens byte-for-byte", () => {
+    const before = '{\n  "model": "a\\u0062", "hooks": {"Start":[], "Stop": [\n    {"matcher": "",  "timeout": 5, "hooks": [ {"type":"command", "command":"terum-memory hook stop"} ]},\n    { "hooks": [{"type":"command", "command":"echo terum-memory hook stop"}] }\n  ]},\n  "number": 1e+02\n}\n';
+    const after = '{\n  "model": "a\\u0062", "hooks": {"Start":[], "Stop": [\n    { "hooks": [{"type":"command", "command":"echo terum-memory hook stop"}] }\n  ]},\n  "number": 1e+02\n}\n';
+    fs.writeFileSync(opts.settingsPath, before);
+    uninstallClaudeCodeConfig(opts);
+    expect(read(opts.settingsPath)).toBe(after);
+  });
+
+  it("uninstall removes only our hook object inside a mixed entry, leaving surrounding tokens byte-for-byte", () => {
+    const before = '{"hooks":{"Stop":[ {"matcher": "Bash", "hooks": [ {"command":"mine"} ,{"type":"command","command":" terum-memory hook stop "}, {"command": "theirs"} ], "timeout": 9} ]}, "x": [1, 2 ]}';
+    const after = '{"hooks":{"Stop":[ {"matcher": "Bash", "hooks": [ {"command":"mine"}, {"command": "theirs"} ], "timeout": 9} ]}, "x": [1, 2 ]}';
+    fs.writeFileSync(opts.settingsPath, before);
+    uninstallClaudeCodeConfig(opts);
+    expect(read(opts.settingsPath)).toBe(after);
+  });
+
+  it("uninstall removes every occurrence across many entries in one pass", () => {
+    const entries = [hook, { matcher: "", hooks: hook.hooks }, { unrelated: true }, { hooks: [userHook, ...hook.hooks] },
+      { command: "terum-memory hook stop" }, hook, { hooks: [{ command: "terum-memory hook stop --custom" }] }];
+    fs.writeFileSync(opts.settingsPath, JSON.stringify({ hooks: { Stop: entries } }));
+    uninstallClaudeCodeConfig(opts);
+    expect(JSON.parse(read(opts.settingsPath)).hooks.Stop).toEqual([{ unrelated: true }, { hooks: [userHook] },
+      { hooks: [{ command: "terum-memory hook stop --custom" }] }]);
+    const rename = vi.spyOn(fs, "renameSync");
+    uninstallClaudeCodeConfig(opts);
+    expect(rename).not.toHaveBeenCalled();
   });
 
   it.each(["settingsPath", "mcpConfigPath"] as const)("refuses malformed %s and names it without modifying either file", key => {

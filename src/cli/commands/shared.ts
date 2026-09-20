@@ -81,8 +81,12 @@ export async function command(
     }
     return code;
   } catch (error) {
-    if (!(error instanceof UsageError)) throw error;
-    (deps.err ?? console.error)(`${error.message}\nUsage: terum-memory ${usage}`);
-    return 1;
+    return usageFailure(deps, usage, error);
   } finally { if (db && !deps.db) db.close(); }
+}
+/** Report a usage error with exit code 1; anything else propagates untouched. */
+export function usageFailure(deps: CommandDeps, usage: string, error: unknown): number {
+  if (!(error instanceof UsageError)) throw error;
+  (deps.err ?? console.error)(`${error.message}\nUsage: terum-memory ${usage}`);
+  return 1;
 }

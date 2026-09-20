@@ -111,6 +111,18 @@ function target(text: string, keys: string[], installing: boolean, value: unknow
   return { text, node };
 }
 
+/** A hook object is ours when its trimmed command is exactly ours; containing it is not enough. */
+function ownedHook(value: unknown): boolean {
+  return object(value) && typeof value.command === "string" && value.command.trim() === COMMAND;
+}
+
+/**
+ * Ownership is asymmetric by design. Install claims an entry only when the
+ * whole entry is canonical and refuses to overwrite a hand-edited one.
+ * Uninstall is keyed on the command: every hook object that runs our command
+ * goes, whatever sibling fields (matcher, timeout) the entry carries, because a
+ * hook left behind would fail on every Claude Code stop after the binary is gone.
+ */
 function editSettings(text: string, installing: boolean): string {
   const located = target(text, ["hooks", "Stop"], installing, [HOOK]);
   if (!located.node) return located.text;
@@ -118,17 +130,25 @@ function editSettings(text: string, installing: boolean): string {
   if (!Array.isArray(stop.value)) throw new Error("hooks.Stop must be an array");
   let found = false;
   for (let i = 0; i < stop.children.length; i++) {
-    const entry = stop.children[i]!.value;
-    const exact = isDeepStrictEqual(entry, HOOK);
-    if (exact) {
-      if (!installing) return editSettings(remove(text, stop, i), false);
-      found = true;
-    } else if (installing && object(entry)) {
-      const commands = [entry, ...(Array.isArray(entry.hooks) ? entry.hooks : [])];
-      if (commands.some(hook => object(hook) && typeof hook.command === "string" && hook.command.trim() === COMMAND)) {
+    const entryNode = stop.children[i]!;
+    const entry = entryNode.value;
+    if (installing) {
+      if (isDeepStrictEqual(entry, HOOK)) found = true;
+      else if (object(entry) && [entry, ...(Array.isArray(entry.hooks) ? entry.hooks : [])].some(ownedHook)) {
         throw new Error(`Collision: ${COMMAND} has a noncanonical hook value`);
       }
+      continue;
     }
+    if (!object(entry)) continue;
+    // Nonstandard shape: the command sits on the entry itself.
+    if (ownedHook(entry)) return editSettings(remove(text, stop, i), false);
+    const hooks = entryNode.children.find(child => child.key === "hooks");
+    if (!hooks || !Array.isArray(hooks.value)) continue;
+    const owned = hooks.children.findIndex(hook => ownedHook(hook.value));
+    if (owned === -1) continue;
+    // Drop only our hook objects; the entry goes only once nothing else is left in it.
+    const others = hooks.children.some(hook => !ownedHook(hook.value));
+    return editSettings(others ? remove(text, hooks, owned) : remove(text, stop, i), false);
   }
   return installing && !found ? add(text, stop, HOOK) : text;
 }
