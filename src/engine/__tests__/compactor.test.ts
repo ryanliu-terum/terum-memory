@@ -183,6 +183,30 @@ it("uses the most recent capture to break repository ties and ignores null metad
   expect(rows(f.db, "notes")[0]!.repo_name).toBe("second");
 });
 
+it("treats corrupt capture metadata as an unknown repository instead of failing the distill", async () => {
+  const f = fixture();
+  f.capture({ metadata: "bad JSON" });
+  f.capture({ metadata: '{"repo_name":"known"}' });
+  f.capture({ metadata: "{not json either" });
+  const claim = f.claim();
+  await runDistillJob(f.db, claim, f.deps);
+  expect(rows(f.db, "jobs").find(row => row.id === claim.id)).toMatchObject({ status: "done" });
+  expect(rows(f.db, "notes")).toHaveLength(1);
+  expect(rows(f.db, "notes")[0]!.repo_name).toBe("known");
+  expect(pending(f.db)).toEqual([]);
+});
+
+it("persists a note with a null repository when every capture's metadata is corrupt", async () => {
+  const f = fixture();
+  f.capture({ metadata: "bad JSON" });
+  f.capture({ metadata: "[]" });
+  const claim = f.claim();
+  await runDistillJob(f.db, claim, f.deps);
+  expect(rows(f.db, "jobs").find(row => row.id === claim.id)).toMatchObject({ status: "done" });
+  expect(rows(f.db, "notes")[0]!.repo_name).toBeNull();
+  expect(pending(f.db)).toEqual([]);
+});
+
 it("orders timestamp ties by creation time then insertion order and isolates conversations", async () => {
   const f = fixture();
   const captured_at = "2025-01-01T00:00:00.000Z";
@@ -318,10 +342,10 @@ it("scrubs before chunking and unions every chunk in order", async () => {
 });
 
 describe("retryable failures leave no partial business writes", () => {
-  it.each(["backend", "parse", "embed", "dimension", "count", "nan", "db-dimension", "write", "metadata", "later-chunk"])(
+  it.each(["backend", "parse", "embed", "dimension", "count", "nan", "db-dimension", "write", "later-chunk"])(
     "requeues with backoff for %s failure", async (failure) => {
       const f = fixture();
-      f.capture(failure === "metadata" ? { metadata: "bad JSON" } : failure === "later-chunk" ? { prompt: "x".repeat(100_100) } : {});
+      f.capture(failure === "later-chunk" ? { prompt: "x".repeat(100_100) } : {});
       if (failure === "backend") f.completeJSON.mockRejectedValueOnce(new Error("backend unavailable"));
       if (failure === "parse") f.completeJSON.mockResolvedValueOnce("invalid JSON");
       if (failure === "embed") f.embed.mockRejectedValueOnce(new Error("embed unavailable"));

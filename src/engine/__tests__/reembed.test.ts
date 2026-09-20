@@ -184,13 +184,38 @@ describe("reembed protocol", () => {
     expect(embedder.embed).toHaveBeenNthCalledWith(3, ["note 1"], "document"); assertDone(db);
   });
 
-  it("surfaces excess shadow rows instead of swapping or spinning forever", async () => {
+  it("prunes orphaned shadow rows at the swap instead of copying them or spinning forever", async () => {
     const { db, claim } = fixture(); shadows(db);
     db.transaction(() => db.prepare("INSERT INTO note_vec_new VALUES (?, ?)")
       .run("orphan", Buffer.from(vector("orphan", 3).buffer)))();
-    expect(await runReembedJob(db, claim, { embedderFor: async () => fake(), now }))
-      .toMatchObject({ status: "requeued", error: "Unexpected extra rows in note_vec_new" });
-    assertSpace(db, "old"); expect(count(db, "jobs WHERE kind = 'link-cluster'")).toBe(0);
+    expect((await runReembedJob(db, claim, { embedderFor: async () => fake(), now })).status).toBe("done");
+    assertDone(db);
+    expect(db.prepare("SELECT 1 FROM note_vec WHERE note_id = 'orphan'").get()).toBeUndefined();
+  });
+
+  it("reconciles a source row replaced between batches even though the row counts still match", async () => {
+    const { db, claim } = fixture(); const embedder = fake(); let swapped = false;
+    const clock = () => {
+      const ready = db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'decision_vec_new'").get();
+      if (!swapped && ready && count(db, "note_vec_new") === 3 && count(db, "decision_vec_new") === 2) {
+        swapped = true;
+        // Distill's replace pattern: the old decision row goes away, a new id arrives. Counts stay 2/2.
+        db.transaction(() => {
+          db.prepare("DELETE FROM decisions WHERE id = 'd0'").run();
+          db.prepare("DELETE FROM decision_vec WHERE decision_id = 'd0'").run();
+          db.prepare(`INSERT INTO decisions (id, decision_text, content_hash, provenance, decided_at, created_at)
+            VALUES ('d9', 'decision 9', 'd9', 'distilled', 't', 't')`).run();
+          db.prepare("INSERT INTO decision_vec VALUES (?, ?)").run("d9", Buffer.from(vector("decision 9", 4).buffer));
+        })();
+      }
+      return now();
+    };
+    expect((await runReembedJob(db, claim, { embedderFor: async () => embedder, now: clock })).status).toBe("done");
+    expect(swapped).toBe(true);
+    expect(embedder.embed).toHaveBeenNthCalledWith(3, ["decision 9"], "document");
+    assertDone(db);
+    expect(db.prepare("SELECT 1 FROM decision_vec WHERE decision_id = 'd0'").get()).toBeUndefined();
+    expect(db.prepare("SELECT 1 FROM decision_vec WHERE decision_id = 'd9'").get()).toBeDefined();
   });
 
   it("abandons a reclaimed lease before writing a computed batch", async () => {
