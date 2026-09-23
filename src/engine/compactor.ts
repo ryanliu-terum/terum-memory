@@ -69,8 +69,11 @@ interface Capture {
 function majorityRepo(captures: Capture[]): string | null {
   const counts = new Map<string, { count: number; latest: number }>();
   captures.forEach((capture, latest) => {
-    // Malformed JSON is a surfaced retryable failure, never a silently skipped capture.
-    const metadata: unknown = JSON.parse(capture.metadata);
+    // Corrupt metadata is an unknown repository, not a distill failure: the capture abstains from the
+    // vote and the note still lands (repo_name null when no capture is readable). Dead-lettering here
+    // would pin a whole conversation behind one bad row that retries can never repair.
+    let metadata: unknown;
+    try { metadata = JSON.parse(capture.metadata); } catch { return; }
     if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) return;
     const value = (metadata as Record<string, unknown>).repo_name;
     if (typeof value !== "string") return;

@@ -90,18 +90,22 @@ export async function runReembedJob(db: Db, claim: JobClaim, deps: ReembedDeps):
       const result = db.transaction(() => {
         if (!renewLease(db, claim, deps)) return "stale";
         for (const table of tables) {
-          const { source, shadow } = db.prepare(`SELECT
-            (SELECT count(*) FROM ${table.source}) AS source,
-            (SELECT count(*) FROM ${table.shadow}) AS shadow`).get() as { source: number; shadow: number };
-          if (shadow > source) throw new Error(`Unexpected extra rows in ${table.shadow}`);
-          if (shadow !== source) return "incomplete";
+          // Exact set reconciliation under the write lock, not a row-count compare: a source row
+          // deleted and another inserted between batches (distill replaces decisions this way) keeps
+          // the counts equal while leaving one row unembedded and one shadow row orphaned.
+          const { missing } = db.prepare(`SELECT count(*) AS missing FROM ${table.source} AS source
+            WHERE NOT EXISTS (SELECT 1 FROM ${table.shadow} AS shadow WHERE shadow.${table.key} = source.id)`)
+            .get() as { missing: number };
+          if (missing > 0) return "incomplete";
         }
         const completed = completeJob(db, claim, tx => {
           // vec0 cannot reliably ALTER RENAME. Re-create and copy under one write transaction.
           for (const table of tables) tx.exec(`DROP TABLE ${table.real}`);
           createVecTables(tx, dim);
+          // Orphaned shadow rows (source row gone since it was embedded) are pruned by the join.
           for (const table of tables) tx.exec(`INSERT INTO ${table.real} (${table.key}, embedding)
-            SELECT ${table.key}, embedding FROM ${table.shadow}`);
+            SELECT shadow.${table.key}, shadow.embedding FROM ${table.shadow} AS shadow
+            WHERE EXISTS (SELECT 1 FROM ${table.source} AS source WHERE source.id = shadow.${table.key})`);
           setMeta(tx, "embedder_id", target);
           setMeta(tx, "embedder_dim", String(dim));
           dropShadows(tx);
