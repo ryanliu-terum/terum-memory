@@ -37,7 +37,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # Node 22, not 20: npm 12 (current npm@latest) dropped Node 20, and the
           # trusted-publishing upgrade step below installs npm@latest. CI tests 22.
