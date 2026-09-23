@@ -48,7 +48,7 @@
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.0.3",
     "graphology": "^0.26.0",
     "graphology-communities-louvain": "^2.0.2",
     "sqlite-vec": "^0.1.9",
