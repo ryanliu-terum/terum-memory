@@ -39,7 +39,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Node 22, not 20: npm 12 (current npm@latest) dropped Node 20, and the
+          # trusted-publishing upgrade step below installs npm@latest. CI tests 22.
+          node-version: 22
           registry-url: https://registry.npmjs.org
       - name: Verify tag matches package.json version
         run: |
@@ -53,7 +55,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      # Trusted publishing needs npm 11.5.1 or newer; Node 20 ships npm 10.
+      # Trusted publishing needs npm 11.5.1 or newer; Node 22 ships npm 10.
       # This upgrades only the npm CLI in the runner, after the lockfile has
       # already been installed and verified above.
       - name: Upgrade npm for trusted publishing
