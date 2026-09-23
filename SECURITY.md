@@ -18,8 +18,6 @@ Please report vulnerabilities privately. Do **not** open a public issue.
 Use GitHub private vulnerability reporting for this repository:
 <https://github.com/ryanliu-terum/terum-memory/security/advisories/new>
 
-If you cannot use GitHub, contact `[security contact]`.
-
 Include what you can:
 
 - affected version (`terum-memory --version`), OS, and Node version
