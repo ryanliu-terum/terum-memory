@@ -5,7 +5,7 @@ import { cosineSimilarity } from "../engine/linker.js";
 import { scrubSecrets } from "../engine/secret-scrub.js";
 import { thresholdsFor } from "../engine/thresholds.js";
 import type { ChatBackend } from "../llm/backend.js";
-import { makeDedupJudge, selectDedupCandidate, type DedupCandidate } from "./dedup.js";
+import { effectiveRail, makeDedupJudge, selectDedupCandidate, type DedupCandidate } from "./dedup.js";
 import { decisionContentHash } from "./hash.js";
 import { decodeVector, embedOne } from "./internal.js";
 
@@ -46,7 +46,7 @@ export async function ratifyDecision(db: Db, input: RatifyInput, deps: RatifyDep
   const reason = input.reason === undefined ? null : scrubSecrets(input.reason);
   const topic = input.topic === undefined ? null : scrubSecrets(input.topic);
   const contentHash = decisionContentHash(decisionText);
-  const rail = thresholdsFor(getMeta(db, "embedder_id") ?? "").rail;
+  const rail = effectiveRail(thresholdsFor(getMeta(db, "embedder_id") ?? "").rail);
   let embedding: Float32Array;
   try {
     embedding = await embedOne(db, deps.embedder, decisionText, "document");

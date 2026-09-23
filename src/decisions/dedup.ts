@@ -2,6 +2,23 @@ import { cosineSimilarity } from "../engine/linker.js";
 import type { DecisionRailConstants } from "../engine/thresholds.js";
 import type { ChatBackend } from "../llm/backend.js";
 
+/**
+ * Pre-reconciliation guard (v0.1.0). The measured merge constants in
+ * engine/thresholds.ts come from the synthetic calibration corpus only; the
+ * private real-corpus reconciliation (offsets above 0.02 resolve in favor of
+ * the real reading) has not run yet. A merge threshold that is too low would
+ * silently drop the incoming ratified text, which no later recalibration can
+ * recover. Until reconciliation lands, cosine alone never merges: exact content
+ * hashes still short-circuit, and every candidate at or above judgeLow goes to
+ * the judge. The reconciliation PR flips this to false.
+ */
+export const COSINE_AUTO_MERGE_DISABLED = true;
+
+/** The rail ratify actually applies: the measured rail, minus cosine-only merging while the guard holds. */
+export function effectiveRail(rail: DecisionRailConstants): DecisionRailConstants {
+  return COSINE_AUTO_MERGE_DISABLED ? { ...rail, merge: Number.POSITIVE_INFINITY } : rail;
+}
+
 export interface DedupCandidate {
   id: string;
   decision_text: string;

@@ -70,7 +70,7 @@ it("inserts a ratified local UUID row and its vector atomically", async () => {
     embedding: Buffer.from(axis.buffer) }]);
 });
 
-it("upgrades a cosine-matching distilled decision while preserving its first record and vector", async () => {
+it("upgrades a judge-confirmed high-cosine distilled decision while preserving its first record and vector", async () => {
   const f = fixture();
   const id = seed(f.db, { text: "Keep storage on this machine", provenance: "distilled",
     embedding: vector(0.8), decidedAt: "2025-01-01", createdAt: "2025-01-02" });
@@ -79,7 +79,18 @@ it("upgrades a cosine-matching distilled decision while preserving its first rec
   expect(await ratifyDecision(f.db, input, f.deps)).toEqual({ ok: true, decisionId: id, merged: true });
   expect(rows(f.db, "decisions")).toEqual([{ ...before, provenance: "ratified", human_quote: input.human_confirmation_quote }]);
   expect(rows(f.db, "decision_vec")).toEqual(vectors);
-  expect(f.completeJSON).not.toHaveBeenCalled();
+  // Above the measured merge constant, but cosine alone does not merge until reconciliation.
+  expect(f.completeJSON).toHaveBeenCalledTimes(1);
+});
+
+it("keeps a high-cosine reversal distinct instead of dropping the incoming text on cosine alone", async () => {
+  const f = fixture();
+  f.completeJSON.mockResolvedValue('{"verdict":"reversal_or_distinct"}');
+  const id = seed(f.db, { text: "Keep storage on this machine", embedding: vector(0.95) });
+  const result = await ratifyDecision(f.db, input, f.deps);
+  expect(result).toMatchObject({ ok: true, merged: false });
+  expect(rows(f.db, "decisions").map(row => row.id).sort()).toEqual([id, (result as { decisionId: string }).decisionId].sort());
+  expect(rows(f.db, "decisions").map(row => row.decision_text)).toContain(input.decision_text);
 });
 
 it("keeps an in-band reversal as two separate rows and vectors", async () => {
