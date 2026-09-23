@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { thresholdsFor, REFERENCE_EMBEDDER } from "../../engine/thresholds.js";
 import type { ChatBackend } from "../../llm/backend.js";
-import { makeDedupJudge, selectDedupCandidate, type DedupCandidate, type DedupIncoming } from "../dedup.js";
+import { COSINE_AUTO_MERGE_DISABLED, effectiveRail, makeDedupJudge, selectDedupCandidate, type DedupCandidate, type DedupIncoming } from "../dedup.js";
 import { axis, vector } from "./helpers.js";
 
 const rail = thresholdsFor(REFERENCE_EMBEDDER).rail;
@@ -97,4 +97,16 @@ it.each(["throw", "", "not JSON", '{"verdict":"conflict"}', "null", "[]", "{}",
 it("parses same_decision as a positive identity verdict", async () => {
   const judge = makeDedupJudge({ modelId: "fake", completeJSON: async () => ' { "verdict": "same_decision" } ' });
   expect(await judge(incoming, candidate("band", 0.65))).toBe(true);
+});
+
+it("effectiveRail keeps the measured floor and judge band but never merges on cosine alone while the guard holds", async () => {
+  expect(COSINE_AUTO_MERGE_DISABLED).toBe(true);
+  const effective = effectiveRail(rail);
+  expect(effective.floor).toBe(rail.floor);
+  expect(effective.judgeLow).toBe(rail.judgeLow);
+  expect(effective.merge).toBe(Number.POSITIVE_INFINITY);
+  const judge = vi.fn(async () => false);
+  const identical = candidate("identical", 1);
+  expect((await selectDedupCandidate(incoming, [identical], effective, judge)).candidate).toBeNull();
+  expect(judge).toHaveBeenCalledExactlyOnceWith(incoming, identical);
 });
