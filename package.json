@@ -1,6 +1,6 @@
 {
   "name": "terum-memory",
-  "version": "0.1.0-dev.0",
+  "version": "0.1.0",
   "description": "Local-first memory + decision record for individual developers working with coding agents. One SQLite file, no server, no accounts.",
   "type": "module",
   "license": "MIT",
